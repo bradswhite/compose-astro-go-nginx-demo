@@ -11,5 +11,34 @@ services:
     build:
       context: backend
     container_name: backend
+    secrets:
+      - db-password
     expose:
       - "3000:3000"
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:12-alpine
+    environment:
+      - POSTGRES_DB=compose-demo-db
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+    user: postgres
+    restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    secrets:
+      - db-password
+    expose:
+      - 5432:5432
+    volumes:
+      - db-data:/var/lib/postgres/data
+volumes:
+  db-data: {}
+secrets:
+  db-password:
+    file: db/password.txt

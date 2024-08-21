@@ -29,7 +29,7 @@ func main() {
   })
 
   c := cors.New(cors.Options{
-    //AllowedOrigins: []string{"http://localhost:8080"},
+    AllowedOrigins: []string{"http://localhost:8080"},
     AllowedMethods: []string{
       http.MethodGet,
       http.MethodPost,
