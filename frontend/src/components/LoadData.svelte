@@ -1,8 +1,6 @@
 <script lang="ts">
   const getData = async (): Promise<string> => {
-    //const url = import.meta.env.PUBLIC_API_URL;
-    const url = '/api';
-    const res = await fetch(url, {
+    const res = await fetch('/api', {
       headers: {'Access-Control-Allow-Origin': '*'}
     });
     return await res.json();
@@ -11,8 +9,10 @@
 
 {#await getData()}
   <p>Loading data...</p>
-{:then data}
-  <p>Hello {data.name}!</p>
+{:then people}
+  {#each people as person}
+    <p>Hello {person.name}!</p>
+  {/each}
 {:catch error}
   <p>Cannot load data</p>
   <p>{error.message}</p>
