@@ -8,17 +8,21 @@ services:
     depends_on:
       - backend
   backend:
-    build:
-      context: backend
+    #build:
+    #  context: backend
+    image: cosmtrek/air
+    working_dir: /src
     container_name: backend
     secrets:
       - db-password
     expose:
       - "3000:3000"
-    restart: always
+    #restart: always
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - ./backend/:/src/
   db:
     image: postgres:12-alpine
     environment:
@@ -39,6 +43,7 @@ services:
       - db-data:/var/lib/postgres/data
 volumes:
   db-data: {}
+  backend: {}
 secrets:
   db-password:
     file: db/password.txt
