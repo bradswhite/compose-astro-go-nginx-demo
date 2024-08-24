@@ -9,7 +9,9 @@ import (
 	"log"
 	"net/http"
 	"time"
+  "os"
 
+  "github.com/joho/godotenv"
   "github.com/rs/cors"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -21,12 +23,17 @@ type People struct {
 }
 
 func connect() (*sql.DB, error) {
-	bin, err := ioutil.ReadFile("/run/secrets/db-password")
+  passwordFile := os.Getenv("POSTGRES_PASSWORD_FILE")
+  dbPort := os.Getenv("POSTGRES_PORT")
+  dbName := os.Getenv("POSTGRES_DB")
+  dbUser := os.Getenv("POSTGRES_USER")
+
+	bin, err := ioutil.ReadFile(passwordFile)
 	if err != nil {
 		return nil, err
 	}
   password := strings.TrimRight(string(bin), "\n")
-	return sql.Open("postgres", fmt.Sprintf("postgres://postgres:%s@db:5432/compose-demo-db?sslmode=disable", password))
+	return sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@db:%s/%s?sslmode=disable", dbUser, password, dbPort, dbName))
 }
 
 func peopleHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,17 +71,25 @@ func peopleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+  err := godotenv.Load()
+  if err != nil {
+    log.Fatal("Error loading .env file")
+  }
+
 	log.Print("Prepare db...")
 	if err := prepare(); err != nil {
 		log.Fatal(err)
 	}
 
-  log.Print("Listening :3000")
+  apiPort := fmt.Sprintf(":%s", os.Getenv("BACKEND_PORT"))
+  webPort := fmt.Sprintf(":%s", os.Getenv("FRONTEND_PORT"))
+
+  log.Print("Listening ", apiPort)
 	r := mux.NewRouter()
 	r.HandleFunc("/", peopleHandler)
 
   c := cors.New(cors.Options{
-    AllowedOrigins: []string{"http://localhost:8080"},
+    AllowedOrigins: []string{webPort},
     AllowedMethods: []string{
       http.MethodGet,
       http.MethodPost,
@@ -89,7 +104,7 @@ func main() {
   })
 
   handler := c.Handler(r)
-	log.Fatal(http.ListenAndServe(":3000", handler))
+	log.Fatal(http.ListenAndServe(apiPort, handler))
 }
 
 func prepare() error {

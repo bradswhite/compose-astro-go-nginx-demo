@@ -3,58 +3,43 @@
 ARG NODE_VERSION=22.1.0
 ARG PNPM_VERSION=9.0.6
 
-#FROM node:lts AS development
-FROM node:${NODE_VERSION}-alpine AS development
+FROM node:${NODE_VERSION}-alpine AS build
 
 WORKDIR /app
 
-# Install pnpm.
+COPY package*.json pnpm-lock.yaml ./
+
+# Install pnpm
 RUN --mount=type=cache,target=/root/.npm \
     npm install -g pnpm@${PNPM_VERSION}
 
+# Install deps
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=pnpm-lock.yaml,target=pnpm-lock.yaml \
     --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --prod --frozen-lockfile
 
-COPY . /app
+COPY . .
 
-ENV PORT=80
+ARG PORT
 ENV NODE_ENV=production
 
-CMD [ "npm", "start" ]
+RUN pnpm build
 
 
-FROM development AS build
+FROM nginx:alpine AS runtime
 
-RUN npm run build
+ARG FRONTEND_PORT
+ARG BACKEND_PORT
+#ENV FRONTEND_PORT
+#ENV BACKEND_PORT
 
-
-FROM development AS dev-envs
-RUN <<EOF
-apt-get update
-apt-get install -y --no-install-recommends git
-EOF
-
-RUN <<EOF
-useradd -s /bin/bash -m vscode
-groupadd docker
-usermod -aG docker vscode
-EOF
-# install Docker tools (cli, buildx, compose)
-COPY --from=gloursdocker/docker / /
-CMD [ "npm", "start" ]
-
-
-FROM nginx:alpine
-
-COPY --from=build /app/.nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/nginx/templates/nginx.conf.template /etc/nginx/templates/nginx.conf.template
+RUN envsubst < /etc/nginx/templates/nginx.conf.template > /etc/nginx/conf.d/default.conf
 
 WORKDIR /usr/share/nginx/html
 
-# Remove default nginx static assets
 RUN rm -rf ./*
-
 COPY --from=build /app/dist .
 
 ENTRYPOINT ["nginx", "-g", "daemon off;"]
