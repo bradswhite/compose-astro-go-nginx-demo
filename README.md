@@ -4,6 +4,7 @@
 ```
 ln .env frontend/.env
 ln .env backend/.env
+touch db/password.txt
 ```
 
 ### Commands to run (locally)
