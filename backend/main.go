@@ -1,20 +1,20 @@
 package main
 
 import (
-	"database/sql"
+  "database/sql"
   "strings"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"time"
+  "encoding/json"
+  "fmt"
+  "io/ioutil"
+  "log"
+  "net/http"
+  "time"
   "os"
 
   "github.com/joho/godotenv"
   "github.com/rs/cors"
-	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
+  "github.com/gorilla/mux"
+  _ "github.com/lib/pq"
 )
 
 type People struct {
@@ -28,12 +28,12 @@ func connect() (*sql.DB, error) {
   dbName := os.Getenv("POSTGRES_DB")
   dbUser := os.Getenv("POSTGRES_USER")
 
-	bin, err := ioutil.ReadFile(passwordFile)
-	if err != nil {
-		return nil, err
-	}
+  bin, err := ioutil.ReadFile(passwordFile)
+  if err != nil {
+    return nil, err
+  }
   password := strings.TrimRight(string(bin), "\n")
-	return sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@db:%s/%s?sslmode=disable", dbUser, password, dbPort, dbName))
+  return sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@db:%s/%s?sslmode=disable", dbUser, password, dbPort, dbName))
 }
 
 func peopleHandler(w http.ResponseWriter, r *http.Request) {
@@ -82,14 +82,14 @@ func main() {
 	}
 
   apiPort := fmt.Sprintf(":%s", os.Getenv("BACKEND_PORT"))
-  webPort := fmt.Sprintf(":%s", os.Getenv("FRONTEND_PORT"))
+  //webPort := fmt.Sprintf(":%s", os.Getenv("FRONTEND_PORT"))
 
   log.Print("Listening ", apiPort)
 	r := mux.NewRouter()
 	r.HandleFunc("/", peopleHandler)
 
   c := cors.New(cors.Options{
-    AllowedOrigins: []string{webPort},
+    //AllowedOrigins: []string{webPort},
     AllowedMethods: []string{
       http.MethodGet,
       http.MethodPost,

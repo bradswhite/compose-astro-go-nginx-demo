@@ -1,5 +1,10 @@
 <script lang="ts">
-  const getData = async (): Promise<string> => {
+  interface People {
+    id: number;
+    name: string;
+  }
+  
+  const getPeople = async (): Promise<People[]> => {
     const res = await fetch('/api', {
       headers: {'Access-Control-Allow-Origin': '*'}
     });
@@ -7,7 +12,7 @@
   };
 </script>
 
-{#await getData()}
+{#await getPeople()}
   <p>Loading data...</p>
 {:then people}
   {#each people as person}

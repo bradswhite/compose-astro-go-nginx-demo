@@ -22,12 +22,8 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 COPY . .
 
 ARG PORT
-ARG FRONTEND_PORT
 ENV NODE_ENV=production
-ENV HOST=0.0.0.0
 
 RUN pnpm build
-
-EXPOSE ${FRONTEND_PORT}
 
 ENTRYPOINT ["node", "./dist/server/entry.mjs"]

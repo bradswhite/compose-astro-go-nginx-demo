@@ -1,20 +1,36 @@
 services:
+  nginx:
+    build:
+      context: proxy
+      args:
+        PROXY_PORT: ${PROXY_PORT}
+        FRONTEND_PORT: ${FRONTEND_PORT}
+        BACKEND_PORT: ${BACKEND_PORT}
+    container_name: proxy
+    ports:
+      - ${PROXY_PORT}:${PROXY_PORT}
+    depends_on:
+      - frontend
+    env_file: .env
+    networks:
+      - client
   frontend:
     build:
       context: frontend
       args:
         PORT: ${FRONTEND_PORT}
-        FRONTEND_PORT: ${FRONTEND_PORT}
-        BACKEND_PORT: ${BACKEND_PORT}
       #volumes:
         #  - ./app/nginx/:/etc/nginx/
         #  - ./app/dist/:/usr/share/nginx/html/
     container_name: frontend
-    ports:
+    expose:
       - ${FRONTEND_PORT}:${FRONTEND_PORT}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     env_file: .env
+    networks:
+      - client
   backend:
     image: cosmtrek/air
     environment:
@@ -27,6 +43,11 @@ services:
 
       - BACKEND_PORT=${BACKEND_PORT}
     working_dir: /src
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://backend:${BACKEND_PORT}/"]
+      interval: 20s
+      retries: 5
+      start_period: 10s
     container_name: backend
     secrets:
       - db-password
@@ -38,6 +59,9 @@ services:
     volumes:
       - ./backend/:/src/
     env_file: .env
+    networks:
+      - client
+      - server
   db:
     image: postgres:12-alpine
     environment:
@@ -56,9 +80,14 @@ services:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
     volumes:
       - db-data:/var/lib/postgres/data
+    networks:
+      - server
 volumes:
   db-data: {}
   backend: {}
 secrets:
   db-password:
     file: db/password.txt
+networks:
+  client: {}
+  server: {}

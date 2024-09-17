@@ -1,0 +1,26 @@
+upstream frontend {
+  server frontend:$FRONTEND_PORT;
+}
+
+upstream backend {
+  server backend:$BACKEND_PORT;
+}
+
+server {
+
+  listen $PROXY_PORT;
+
+  location /api {
+    proxy_pass http://backend/;
+  }
+
+  location / {
+    proxy_pass http://frontend/;
+  }
+  
+  #error_page   500 502 503 504  /50x.html;
+
+  #location = /50x.html {
+  #  proxy_pass http://frontend/404;
+  #}
+}

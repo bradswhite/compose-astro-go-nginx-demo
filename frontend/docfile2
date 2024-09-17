@@ -3,7 +3,7 @@
 ARG NODE_VERSION=22.1.0
 ARG PNPM_VERSION=9.0.6
 
-FROM node:${NODE_VERSION}-alpine
+FROM node:${NODE_VERSION}-alpine AS build
 
 WORKDIR /app
 
@@ -22,12 +22,22 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 COPY . .
 
 ARG PORT
-ARG FRONTEND_PORT
 ENV NODE_ENV=production
-ENV HOST=0.0.0.0
 
 RUN pnpm build
 
-EXPOSE ${FRONTEND_PORT}
 
-ENTRYPOINT ["node", "./dist/server/entry.mjs"]
+FROM nginx:alpine AS runtime
+
+ARG FRONTEND_PORT
+ARG BACKEND_PORT
+
+COPY --from=build /app/nginx/templates/nginx.conf.template /etc/nginx/templates/nginx.conf.template
+RUN envsubst < /etc/nginx/templates/nginx.conf.template > /etc/nginx/conf.d/default.conf
+
+WORKDIR /usr/share/nginx/html
+
+RUN rm -rf ./*
+COPY --from=build /app/dist .
+
+ENTRYPOINT ["nginx", "-g", "daemon off;"]
